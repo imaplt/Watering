@@ -144,9 +144,9 @@ def setup_schedule(config, state, image_directory):
     interval = config.get("image_capture_interval", 1800)  # Default to 30 minutes
     schedule.every(interval).seconds.do(periodic_image_capture, config, image_directory)
 
-    # Daily email at configured time
-    daily_time = config.get("daily_email_time", "09:00")
-    schedule.every().day.at(daily_time).do(send_daily_email, config, image_directory)
+    # # Daily email at configured time
+    # daily_time = config.get("daily_email_time", "09:00")
+    # schedule.every().day.at(daily_time).do(send_daily_email, config, image_directory)
 
     # Watering schedule
     for entry in config.get("watering_schedule", []):
@@ -164,13 +164,14 @@ def main():
 
     # Capture startup image and send email
     startup_image = capture_image(image_directory, "startup")
-    if startup_image:
-        send_email(
-            config,
-            [startup_image],
-            subject="Plant Watering System Started",
-            message="The plant watering system has started successfully."
-        )
+   
+    # if startup_image:
+    #     send_email(
+    #         config,
+    #         [startup_image],
+    #         subject="Plant Watering System Started",
+    #         message="The plant watering system has started successfully."
+    #     )
 
     # Set up the schedule
     setup_schedule(config, state, image_directory)
