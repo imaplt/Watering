@@ -117,6 +117,7 @@ def index():
         <html lang="en">
         <head>
             <title>Plant Watering System</title>
+            <meta charset="UTF-8">
             <style>
                 body {
                     font-family: Arial, sans-serif;
@@ -232,6 +233,7 @@ def view_logs():
             <!DOCTYPE html>
             <html lang="en">
             <head>
+                <meta charset="UTF-8">
                 <title>System Logs</title>
             </head>
             <body>
@@ -267,6 +269,7 @@ def view_logs():
             <!DOCTYPE html>
             <html lang="en">
             <head>
+                <meta charset="UTF-8">
                 <title>System Logs</title>
             </head>
             <body>
