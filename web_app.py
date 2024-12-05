@@ -156,10 +156,35 @@ def index():
                     color: white;
                     margin-top: 20px;
                 }
+                .nav {
+                    text-align: center;
+                    margin-bottom: 20px;
+                }
+                .nav a {
+                    text-decoration: none;
+                    margin: 0 15px;
+                    font-size: 18px;
+                    color: #007BFF;
+                }
+                .nav a:hover {
+                    text-decoration: underline;
+                }
+                pre {
+                    background-color: #f8f9fa;
+                    padding: 20px;
+                    border: 1px solid #ccc;
+                    border-radius: 8px;
+                    white-space: pre-wrap;
+                    word-wrap: break-word;
+                }
             </style>
         </head>
         <body>
             <h1>Plant Watering System</h1>
+            <div class="nav">
+                <a href="/">Home</a>
+                <a href="/logs">View Logs</a>
+            </div>
             <div class="gallery">
                 {% for image in images %}
                 <div class="gallery-item">
