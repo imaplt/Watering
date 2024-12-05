@@ -271,6 +271,6 @@ def view_logs():
         )
 
 try:
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
 except Exception as e:
     print(f"Flask encountered an error: {e}")
