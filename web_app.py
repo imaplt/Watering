@@ -98,12 +98,20 @@ flask_template = """
 @app.route("/")
 def index():
     # Get the list of images
-    images = [f for f in os.listdir(image_directory) if f.endswith(".jpg")]
+    images = [
+        f for f in os.listdir(image_directory) if f.endswith(".jpg")
+    ]
+
+    # Sort images by their filenames (lexicographically by timestamp if embedded)
+    images.sort()
+
+    # Render the template with the sorted image list
     return render_template_string(
         flask_template,
         images=images,
         year=datetime.now().year,
     )
+
 
 @app.route("/images/<filename>")
 def serve_image(filename):
