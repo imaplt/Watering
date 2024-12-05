@@ -1,7 +1,7 @@
  {
      "image_directory": "/mnt/data/test_images",
      "relay_pin": 23,
-     "image_capture_interval": 1800,
+     "image_capture_interval": 900,
      "daily_email_time": "09:00",
      "daily_email_image_count": 6,
      "watering_schedule": [

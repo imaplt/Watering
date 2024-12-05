@@ -1,5 +1,4 @@
 nopreview=
-mode=640:480
 verbose=0
-timeout=2000
+timeout=1
 
