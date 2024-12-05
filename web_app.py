@@ -205,35 +205,85 @@ def index():
         year=datetime.now().year
     )
 
+
 @app.route("/images/<filename>")
 def serve_image(filename):
-    # Retrieve the image's metadata
     file_path = os.path.join(image_directory, filename)
+
+    # Debugging: Log the requested filename and constructed file path
+    logging.debug(f"Request to serve image: {filename}")
+    logging.debug(f"Constructed file path: {file_path}")
+
     try:
+        # Check if the file exists
+        if not os.path.exists(file_path):
+            logging.error(f"File not found: {file_path}")
+            return render_template_string(
+                """
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <title>Error: Image Not Found</title>
+                </head>
+                <body>
+                    <h1>Image Not Found</h1>
+                    <p>The requested image "{{ filename }}" does not exist.</p>
+                    <a href="/">Back to Home</a>
+                </body>
+                </html>
+                """,
+                filename=filename
+            ), 404
+
+        # Retrieve the timestamp
         timestamp = datetime.fromtimestamp(os.path.getmtime(file_path)).strftime("%Y-%m-%d %H:%M:%S")
+        logging.debug(f"Image timestamp: {timestamp}")
+
     except OSError as e:
-        logging.error(f"Error accessing image metadata: {e}")
+        logging.error(f"Error accessing image metadata for {file_path}: {e}")
         timestamp = "Unknown"
 
-    # Serve the image and display its timestamp
-    return render_template_string(
-        """
-        <!DOCTYPE html>
-        <html lang="en">
-        <head>
-            <title>Image: {{ filename }}</title>
-        </head>
-        <body>
-            <h1>{{ filename }}</h1>
-            <img src="/images/{{ filename }}" alt="{{ filename }}" style="width: 400px;">
-            <p>Timestamp: {{ timestamp }}</p>
-            <a href="/">Back to Home</a>
-        </body>
-        </html>
-        """,
-        filename=filename,
-        timestamp=timestamp
-    )
+    # Serve the image
+    try:
+        return render_template_string(
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <title>Image: {{ filename }}</title>
+            </head>
+            <body>
+                <h1>{{ filename }}</h1>
+                <img src="/images/{{ filename }}" alt="{{ filename }}" style="width: 400px;">
+                <p>Timestamp: {{ timestamp }}</p>
+                <a href="/">Back to Home</a>
+            </body>
+            </html>
+            """,
+            filename=filename,
+            timestamp=timestamp
+        )
+    except Exception as e:
+        logging.error(f"Error serving image {file_path}: {e}")
+        return render_template_string(
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <title>Error: Unable to Serve Image</title>
+            </head>
+            <body>
+                <h1>Error Serving Image</h1>
+                <p>There was an error serving the image "{{ filename }}".</p>
+                <p>Error: {{ error }}</p>
+                <a href="/">Back to Home</a>
+            </body>
+            </html>
+            """,
+            filename=filename,
+            error=str(e)
+        ), 500
+
 
 @app.route("/logs")
 def view_logs():
