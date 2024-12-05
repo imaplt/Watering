@@ -67,7 +67,7 @@ def capture_image(image_directory, label):
 
     try:
         subprocess.run(
-            ["rpicam", "-o", image_path, "-t", "1"],
+            ["rpicam", "-c camera_config.txt", "-o", image_path, "-t", "1"],
             check=True
         )
         logging.info(f"Image captured: {image_path}")
