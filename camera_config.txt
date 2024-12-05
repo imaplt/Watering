@@ -1,0 +1,2 @@
+nopreview=
+mode=640:480:10
