@@ -1,0 +1,19 @@
+ {
+     "image_directory": "/mnt/data/test_images",
+     "relay_pin": 23,
+     "image_capture_interval": 1800,
+     "daily_email_time": "09:00",
+     "daily_email_image_count": 6,
+     "watering_schedule": [
+         {"start_time": "06:00", "duration": 5},
+         {"start_time": "18:00", "duration": 5}
+     ],
+     "email": {
+         "smtp_server": "smtp.gmail.com",
+         "smtp_port": 465,
+         "sender_email": "watering@gmail.com",
+         "password": "",
+         "recipient_email": "chris.auron@gmail.com",
+         "subject": "Watering Images"
+     }
+ }
