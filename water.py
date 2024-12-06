@@ -121,7 +121,6 @@ def send_daily_email(config, image_directory):
             message="Here are the latest images from the plant watering system."
         )
 
-# Water plants
 def water_plants(config, state, image_directory):
     now = datetime.now()
     schedule_data = config.get("watering_schedule", [])
@@ -132,6 +131,7 @@ def water_plants(config, state, image_directory):
 
     # Get the latest watering schedule up to the current time
     latest_scheduled_time = None
+    latest_entry = None  # Track the schedule entry corresponding to the latest time
     for entry in schedule_data:
         start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
         scheduled_datetime = datetime.combine(now.date(), start_time)
@@ -139,9 +139,10 @@ def water_plants(config, state, image_directory):
         if scheduled_datetime <= now:
             if latest_scheduled_time is None or scheduled_datetime > latest_scheduled_time:
                 latest_scheduled_time = scheduled_datetime
+                latest_entry = entry
 
     # Skip if there's no valid scheduled time to run
-    if not latest_scheduled_time:
+    if not latest_scheduled_time or not latest_entry:
         return
 
     # Convert the last watered time from state for comparison
@@ -153,25 +154,17 @@ def water_plants(config, state, image_directory):
 
     # Check if the latest scheduled time is after the last watered time
     if last_watered_datetime is None or latest_scheduled_time > last_watered_datetime:
-        # Find the schedule corresponding to the latest time
-        entry = next(
-            (e for e in schedule_data if datetime.strptime(e["start_time"], "%H:%M").time() == latest_scheduled_time.time()),
-            None
-        )
+        logging.info(f"Starting watering for schedule: {latest_entry}")
+        capture_image(image_directory, "before_watering")
+        pump.on()
+        time.sleep(latest_entry["duration"])
+        pump.off()
+        capture_image(image_directory, "after_watering")
 
-        if entry:
-            logging.info(f"Starting watering for schedule: {entry}")
-            capture_image(image_directory, "before_watering")
-            pump.on()
-            time.sleep(entry["duration"])
-            pump.off()
-            capture_image(image_directory, "after_watering")
-
-            # Update state with the latest watered time
-            state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
-            save_state(state)
-            logging.info(f"Watering completed for schedule: {entry}")
-
+        # Update state with the latest watered time
+        state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
+        save_state(state)
+        logging.info(f"Watering completed for schedule: {latest_entry}")
 
 # Scheduler tasks
 def setup_schedule(config, state, image_directory):
