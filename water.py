@@ -190,9 +190,46 @@ def main():
 
     initialize_pump(config["relay_pin"])
 
+    # Check if the last scheduled watering was missed
+    now = datetime.now()
+    schedule_data = config.get("watering_schedule", [])
+
+    # Get the last schedule up to the current time
+    latest_scheduled_time = None
+    latest_entry = None
+    for entry in schedule_data:
+        start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
+        scheduled_datetime = datetime.combine(now.date(), start_time)
+
+        if scheduled_datetime <= now:
+            if latest_scheduled_time is None or scheduled_datetime > latest_scheduled_time:
+                latest_scheduled_time = scheduled_datetime
+                latest_entry = entry
+
+    # Check if the last scheduled time has been watered
+    if latest_scheduled_time:
+        last_watered_datetime = (
+            datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
+            if state.get("last_watered")
+            else None
+        )
+
+        if last_watered_datetime is None or latest_scheduled_time > last_watered_datetime:
+            logging.info("Missed watering detected or state file missing. Triggering immediate watering.")
+            capture_image(image_directory, "before_watering")
+            pump.on()
+            time.sleep(latest_entry["duration"])
+            pump.off()
+            capture_image(image_directory, "after_watering")
+
+            # Update state with the latest watered time
+            state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
+            save_state(state)
+            logging.info("Immediate watering completed.")
+
     # Capture startup image and send email
     startup_image = capture_image(image_directory, "startup")
-   
+    # Uncomment to enable email notification
     # if startup_image:
     #     send_email(
     #         config,
