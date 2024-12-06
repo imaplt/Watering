@@ -5,13 +5,9 @@
      "daily_email_time": "09:00",
      "daily_email_image_count": 6,
      "watering_schedule": [
-         {"start_time": "06:00", "duration": 8},
-         {"start_time": "10:00", "duration": 8},
-         {"start_time": "12:00", "duration": 8},
-         {"start_time": "14:00", "duration": 8},
-         {"start_time": "16:00", "duration": 8},
-         {"start_time": "18:00", "duration": 8},
-         {"start_time": "20:00", "duration": 8}
+         {"start_time": "13:25", "duration": 8},
+         {"start_time": "13:35", "duration": 8},
+         {"start_time": "13:45", "duration": 8}
      ],
      "email": {
          "smtp_server": "smtp.gmail.com",
