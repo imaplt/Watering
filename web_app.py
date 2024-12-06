@@ -1,4 +1,4 @@
-from flask import Flask, render_template_string, send_from_directory, escape
+from flask import Flask, render_template_string, send_from_directory, escape, request
 import os
 from datetime import datetime
 import logging
