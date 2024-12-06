@@ -145,3 +145,81 @@ def index():
         total_pages=total_pages,
         year=datetime.now().year
     )
+@app.route("/images/<filename>")
+def serve_image_direct(filename):
+    file_path = os.path.join(image_directory, filename)
+    try:
+        if not os.path.exists(file_path):
+            logging.error(f"File not found: {file_path}")
+            return "File not found", 404
+        return send_from_directory(image_directory, filename)
+    except Exception as e:
+        logging.error(f"Error serving image: {e}")
+        return f"Error serving image: {e}", 500
+
+@app.route("/logs")
+def view_logs():
+    try:
+        print(f"Accessing log file at: {log_file_path}")
+        with open(log_file_path, "r") as log_file:
+            logs = log_file.read()
+        # Escape log content to ensure special characters do not break HTML
+        logs = escape(logs)
+        return render_template_string(
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>System Logs</title>
+            </head>
+            <body>
+                <h1>System Logs</h1>
+                <pre>{{ logs }}</pre>
+                <a href="/">Back to Home</a>
+            </body>
+            </html>
+            """,
+            logs=logs
+        )
+    except FileNotFoundError:
+        print("Log file not found.")
+        return render_template_string(
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <title>System Logs</title>
+            </head>
+            <body>
+                <h1>System Logs</h1>
+                <p>Log file not found.</p>
+                <a href="/">Back to Home</a>
+            </body>
+            </html>
+            """
+        )
+    except Exception as e:
+        print(f"Error reading log file: {e}")
+        return render_template_string(
+            """
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <title>System Logs</title>
+            </head>
+            <body>
+                <h1>System Logs</h1>
+                <p>Error: {{ error }}</p>
+                <a href="/">Back to Home</a>
+            </body>
+            </html>
+            """,
+            error=e
+        )
+
+try:
+    app.run(host="0.0.0.0", port=5000, debug=False)
+except Exception as e:
+    print(f"Flask encountered an error: {e}")
