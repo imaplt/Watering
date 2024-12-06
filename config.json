@@ -5,10 +5,10 @@
      "daily_email_time": "09:00",
      "daily_email_image_count": 6,
      "watering_schedule": [
-         {"start_time": "15:30", "duration": 8},
-         {"start_time": "15:38", "duration": 8},
-         {"start_time": "15:45", "duration": 8},
-         {"start_time": "15:55", "duration": 8}
+         {"start_time": "17:30", "duration": 8},
+         {"start_time": "17:45", "duration": 8},
+         {"start_time": "18:00", "duration": 8},
+         {"start_time": "18:30", "duration": 8}
      ],
      "email": {
          "smtp_server": "smtp.gmail.com",
