@@ -7,7 +7,9 @@
      "watering_schedule": [
          {"start_time": "13:25", "duration": 8},
          {"start_time": "13:35", "duration": 8},
-         {"start_time": "13:45", "duration": 8}
+         {"start_time": "14:05", "duration": 8},
+         {"start_time": "14:10", "duration": 8},
+         {"start_time": "14:15", "duration": 8}
      ],
      "email": {
          "smtp_server": "smtp.gmail.com",
