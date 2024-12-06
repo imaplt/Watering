@@ -53,6 +53,11 @@ def initialize_pump(pin):
     try:
         pump = OutputDevice(pin, active_high=False)
         logging.info(f"Pump initialized on GPIO pin {pin}")
+        logging.info(f"Priming the pump..")
+        pump.on()
+        time.sleep(1)
+        pump.off()
+        logging.info(f"Pump prime complete")
     except Exception as e:
         logging.error(f"Error initializing pump: {e}")
 
@@ -129,9 +134,7 @@ def water_plants(config, state, image_directory):
             logging.info(f"Starting watering for schedule: {entry}")
             capture_image(image_directory, "before_watering")
             pump.on()
-            time.sleep(duration / 2)
-            capture_image(image_directory, "halfway_watering")
-            time.sleep(duration / 2)
+            time.sleep(duration)
             pump.off()
             capture_image(image_directory, "after_watering")
             state["last_watered"] = entry["start_time"]

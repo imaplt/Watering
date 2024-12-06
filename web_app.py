@@ -110,7 +110,17 @@ def index():
     # Sort images by their modification times (ascending order)
     images.sort(key=lambda x: x["timestamp"])
 
-    # Render the template with the sorted image list and metadata
+    # Pagination parameters
+    page = int(request.args.get("page", 1))  # Get the page number from the query string, default to 1
+    per_page = 24  # Number of images per page
+    total_pages = (len(images) + per_page - 1) // per_page  # Calculate the total number of pages
+
+    # Determine the range of images to display
+    start = (page - 1) * per_page
+    end = start + per_page
+    paginated_images = images[start:end]
+
+    # Render the template with pagination controls
     return render_template_string(
         """
         <!DOCTYPE html>
@@ -158,35 +168,23 @@ def index():
                     color: white;
                     margin-top: 20px;
                 }
-                .nav {
+                .pagination {
                     text-align: center;
-                    margin-bottom: 20px;
+                    margin-top: 20px;
                 }
-                .nav a {
+                .pagination a {
                     text-decoration: none;
-                    margin: 0 15px;
+                    margin: 0 10px;
                     font-size: 18px;
                     color: #007BFF;
                 }
-                .nav a:hover {
+                .pagination a:hover {
                     text-decoration: underline;
-                }
-                pre {
-                    background-color: #f8f9fa;
-                    padding: 20px;
-                    border: 1px solid #ccc;
-                    border-radius: 8px;
-                    white-space: pre-wrap;
-                    word-wrap: break-word;
                 }
             </style>
         </head>
         <body>
             <h1>Plant Watering System</h1>
-            <div class="nav">
-                <a href="/">Home</a>
-                <a href="/logs">View Logs</a>
-            </div>
             <div class="gallery">
                 {% for image in images %}
                 <div class="gallery-item">
@@ -197,16 +195,25 @@ def index():
                 </div>
                 {% endfor %}
             </div>
+            <div class="pagination">
+                {% if page > 1 %}
+                <a href="/?page={{ page - 1 }}">Previous</a>
+                {% endif %}
+                {% if page < total_pages %}
+                <a href="/?page={{ page + 1 }}">Next</a>
+                {% endif %}
+            </div>
             <div class="footer">
                 &copy; {{ year }} Raspberry Pi Plant System
             </div>
         </body>
         </html>
         """,
-        images=images,
+        images=paginated_images,
+        page=page,
+        total_pages=total_pages,
         year=datetime.now().year
     )
-
 
 @app.route("/images/<filename>")
 def serve_image_direct(filename):
