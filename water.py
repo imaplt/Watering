@@ -228,7 +228,7 @@ def main():
             logging.info("Immediate watering completed.")
 
     # Capture startup image and send email
-    startup_image = capture_image(image_directory, "startup")
+    capture_image(image_directory, "startup")
     # Uncomment to enable email notification
     # if startup_image:
     #     send_email(
