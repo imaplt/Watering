@@ -5,9 +5,9 @@
      "daily_email_time": "09:00",
      "daily_email_image_count": 6,
      "watering_schedule": [
-         {"start_time": "14:10", "duration": 8},
+         {"start_time": "14:55", "duration": 8},
+         {"start_time": "14:05", "duration": 8},
          {"start_time": "14:15", "duration": 8},
-         {"start_time": "14:20", "duration": 8},
          {"start_time": "14:25", "duration": 8},
          {"start_time": "14:35", "duration": 8}
      ],

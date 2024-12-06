@@ -126,20 +126,52 @@ def water_plants(config, state, image_directory):
     now = datetime.now()
     schedule_data = config.get("watering_schedule", [])
 
+    # Ensure state has last_watered entry
+    if "last_watered" not in state:
+        state["last_watered"] = None
+
+    # Get the latest watering schedule up to the current time
+    latest_scheduled_time = None
     for entry in schedule_data:
         start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
-        duration = entry["duration"]
+        scheduled_datetime = datetime.combine(now.date(), start_time)
 
-        if now.time() >= start_time and state["last_watered"] != entry["start_time"]:
+        if scheduled_datetime <= now:
+            if latest_scheduled_time is None or scheduled_datetime > latest_scheduled_time:
+                latest_scheduled_time = scheduled_datetime
+
+    # Skip if there's no valid scheduled time to run
+    if not latest_scheduled_time:
+        return
+
+    # Convert the last watered time from state for comparison
+    last_watered_datetime = (
+        datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
+        if state["last_watered"]
+        else None
+    )
+
+    # Check if the latest scheduled time is after the last watered time
+    if last_watered_datetime is None or latest_scheduled_time > last_watered_datetime:
+        # Find the schedule corresponding to the latest time
+        entry = next(
+            (e for e in schedule_data if datetime.strptime(e["start_time"], "%H:%M").time() == latest_scheduled_time.time()),
+            None
+        )
+
+        if entry:
             logging.info(f"Starting watering for schedule: {entry}")
             capture_image(image_directory, "before_watering")
             pump.on()
-            time.sleep(duration)
+            time.sleep(entry["duration"])
             pump.off()
             capture_image(image_directory, "after_watering")
-            state["last_watered"] = entry["start_time"]
+
+            # Update state with the latest watered time
+            state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
             save_state(state)
             logging.info(f"Watering completed for schedule: {entry}")
+
 
 # Scheduler tasks
 def setup_schedule(config, state, image_directory):
