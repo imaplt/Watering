@@ -108,71 +108,75 @@ def periodic_image_capture(config, image_directory):
 
 # Send daily email with recent images
 def send_daily_email(config, image_directory):
-    images = sorted(
-        [os.path.join(image_directory, f) for f in os.listdir(image_directory) if f.endswith(".jpg")],
-        key=os.path.getmtime
-    )[-config.get("daily_email_image_count", 6):]  # Last N images
+    try:
+        # Collect and sort images by modification time (newest first)
+        images = sorted(
+            [os.path.join(image_directory, f) for f in os.listdir(image_directory) if f.endswith(".jpg")],
+            key=os.path.getmtime,
+            reverse=True  # Newest files first
+        )
 
-    if images:
+        # Select the last N images based on configuration
+        image_count = config.get("daily_email_image_count", 6)  # Default to 6
+        images_to_send = images[:image_count]  # Take the first N (newest) images
+
+        if not images_to_send:
+            logging.info("No images available to send for the daily email.")
+            return
+
+        # Send the email with the selected images
         send_email(
             config,
-            images,
+            images_to_send,
             subject="Daily Update: Plant Watering System",
             message="Here are the latest images from the plant watering system."
         )
+        logging.info(f"Daily email sent with {len(images_to_send)} images.")
+    except Exception as e:
+        logging.error(f"Error sending daily email: {e}")
+
 
 def water_plants(config, state, image_directory):
     now = datetime.now()
     schedule_data = config.get("watering_schedule", [])
 
-    # Ensure state has last_watered entry
+    # Ensure state has a dictionary to track last_watered per schedule
     if "last_watered" not in state:
-        state["last_watered"] = None
+        state["last_watered"] = {}
 
-    # Determine the next valid watering schedule based on the interval
-    latest_scheduled_time = None
-    latest_entry = None
     for entry in schedule_data:
         start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
         interval_days = entry.get("interval", 1)  # Default to every day
         scheduled_datetime = datetime.combine(now.date(), start_time)
 
-        # Adjust the scheduled time based on the interval
+        # Get the last watered time for this specific schedule
         last_watered_datetime = (
-            datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
-            if state.get("last_watered")
+            datetime.strptime(state["last_watered"].get(entry["start_time"]), "%Y-%m-%d %H:%M:%S")
+            if state["last_watered"].get(entry["start_time"])
             else None
         )
 
+        # Check if the schedule is due based on its interval
         if last_watered_datetime:
-            # Calculate the next valid watering day
             next_valid_day = last_watered_datetime.date() + timedelta(days=interval_days)
             if next_valid_day > now.date():
                 continue  # Skip if this schedule is not due yet
 
-        # Select the latest schedule up to the current time
-        if scheduled_datetime <= now:
-            if latest_scheduled_time is None or scheduled_datetime > latest_scheduled_time:
-                latest_scheduled_time = scheduled_datetime
-                latest_entry = entry
+        # If the schedule is due and the time has passed
+        if scheduled_datetime <= now and (last_watered_datetime is None or scheduled_datetime > last_watered_datetime):
+            logging.info(f"Starting watering for schedule: {entry}")
+            print(f"Starting watering for schedule: {entry}")
+            capture_image(image_directory, f"before_watering_{entry['start_time']}")
+            pump.on()
+            time.sleep(entry["duration"])
+            pump.off()
+            capture_image(image_directory, f"after_watering_{entry['start_time']}")
 
-    # Skip if there's no valid scheduled time to run
-    if not latest_scheduled_time or not latest_entry:
-        return
-
-    # Trigger watering if valid
-    logging.info(f"Starting watering for schedule: {latest_entry}")
-    capture_image(image_directory, "before_watering")
-    pump.on()
-    time.sleep(latest_entry["duration"])
-    pump.off()
-    capture_image(image_directory, "after_watering")
-
-    # Update state with the latest watered time
-    state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
-    save_state(state)
-    logging.info(f"Watering completed for schedule: {latest_entry}")
-
+            # Update state for this specific schedule
+            state["last_watered"][entry["start_time"]] = scheduled_datetime.strftime("%Y-%m-%d %H:%M:%S")
+            save_state(state)
+            logging.info(f"Watering completed for schedule: {entry}")
+            print(f"Watering completed for schedule: {entry}")
 
 # Scheduler tasks
 def setup_schedule(config, state, image_directory):
@@ -180,9 +184,9 @@ def setup_schedule(config, state, image_directory):
     interval = config.get("image_capture_interval", 1800)  # Default to 30 minutes
     schedule.every(interval).seconds.do(periodic_image_capture, config, image_directory)
 
-    # # Daily email at configured time
-    # daily_time = config.get("daily_email_time", "09:00")
-    # schedule.every().day.at(daily_time).do(send_daily_email, config, image_directory)
+    # Daily email at configured time
+    daily_time = config.get("daily_email_time", "09:00")
+    schedule.every().day.at(daily_time).do(send_daily_email, config, image_directory)
 
     # Watering schedule
     for entry in config.get("watering_schedule", []):
@@ -238,6 +242,7 @@ def main():
         )
 
         if last_watered_datetime is None or latest_scheduled_time > last_watered_datetime:
+            print("Missed watering detected or state file missing. Triggering immediate watering.")
             logging.info("Missed watering detected or state file missing. Triggering immediate watering.")
             capture_image(image_directory, "before_watering")
             pump.on()
@@ -260,6 +265,8 @@ def main():
             subject="Plant Watering System Started",
             message="The plant watering system has started successfully."
         )
+        print("EMail sent...")
+        logging.info("Startup EMail sent....")
 
     # Set up the schedule
     setup_schedule(config, state, image_directory)
