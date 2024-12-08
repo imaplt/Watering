@@ -164,6 +164,7 @@ def water_plants(config, state, image_directory):
             # Skip if already watered at this scheduled time
             if scheduled_time <= last_watered_datetime:
                 logging.debug(f"Skipping {start_time} (already watered at {last_watered}).")
+                print("Skipping {start_time} (already watered at {last_watered}).")
                 continue
 
         # If the schedule is due and has not run yet
@@ -179,6 +180,7 @@ def water_plants(config, state, image_directory):
             state.setdefault("last_watered", {})[start_time] = scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
             save_state(state)
             logging.info(f"Watering completed for schedule at {start_time}.")
+            print("Watering completed for schedule at {}".format(start_time))
 
 # Scheduler tasks
 def setup_schedule(config, state, image_directory):
@@ -193,6 +195,7 @@ def setup_schedule(config, state, image_directory):
     # Watering schedule
     for entry in config.get("watering_schedule", []):
         schedule.every().day.at(entry["start_time"]).do(water_plants, config, state, image_directory)
+        print(entry)
 
 # Main function
 def main():
@@ -201,6 +204,7 @@ def main():
     image_directory = config.get("image_directory", "images")
     os.makedirs(image_directory, exist_ok=True)
     logging.info("System initialized.")
+    print("System initialized.")
 
     initialize_pump(config["relay_pin"])
 
@@ -234,6 +238,7 @@ def main():
         # If schedule is due and has not run yet
         if scheduled_time <= now:
             logging.info(f"Missed watering detected for schedule at {start_time}. Triggering immediate watering.")
+            print("Immediate watering detected.")
             capture_image(image_directory, f"before_watering_{start_time}")
             pump.on()
             time.sleep(duration)
@@ -244,6 +249,7 @@ def main():
             state.setdefault("last_watered", {})[start_time] = scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
             save_state(state)
             logging.info(f"Immediate watering completed for schedule at {start_time}.")
+            print("Immediate watering completed.")
 
     # Capture startup image and send email (optional)
     startup_image = capture_image(image_directory, "startup")

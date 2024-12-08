@@ -3,21 +3,11 @@
      "relay_pin": 23,
      "image_capture_interval": 1800,
      "daily_email_time": "09:00",
-     "daily_email_image_count": 6,
+     "daily_email_image_count": 4,
      "watering_schedule": [
         {
-            "start_time": "10:05",
-            "duration": 10,
-            "interval": 1
-        },
-        {
-            "start_time": "10:15",
-            "duration": 10,
-            "interval": 1
-        },
-        {
-            "start_time": "15:00",
-            "duration": 30,
+            "start_time": "09:00",
+            "duration": 60,
             "interval": 2
         }
      ],
