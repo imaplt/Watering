@@ -2,4 +2,5 @@ nopreview=
 verbose=0
 timeout=1
 vflip=
+tuning-file=/usr/share/libcamera/ipa/rpi/vc4/imx708_wide_noir.json
 
