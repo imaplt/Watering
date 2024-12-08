@@ -145,38 +145,40 @@ def water_plants(config, state, image_directory):
         state["last_watered"] = {}
 
     for entry in schedule_data:
-        start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
+        start_time = entry["start_time"]
+        duration = entry["duration"]
         interval_days = entry.get("interval", 1)  # Default to every day
-        scheduled_datetime = datetime.combine(now.date(), start_time)
+        scheduled_time = datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M").time())
 
         # Get the last watered time for this specific schedule
-        last_watered_datetime = (
-            datetime.strptime(state["last_watered"].get(entry["start_time"]), "%Y-%m-%d %H:%M:%S")
-            if state["last_watered"].get(entry["start_time"])
-            else None
-        )
+        last_watered = state.get("last_watered", {}).get(start_time)
 
-        # Check if the schedule is due based on its interval
-        if last_watered_datetime:
+        if last_watered:
+            last_watered_datetime = datetime.strptime(last_watered, "%Y-%m-%d %H:%M:%S")
+
+            # Calculate the next valid day based on interval
             next_valid_day = last_watered_datetime.date() + timedelta(days=interval_days)
             if next_valid_day > now.date():
-                continue  # Skip if this schedule is not due yet
+                continue  # Skip if not due yet
 
-        # If the schedule is due and the time has passed
-        if scheduled_datetime <= now and (last_watered_datetime is None or scheduled_datetime > last_watered_datetime):
-            logging.info(f"Starting watering for schedule: {entry}")
-            print(f"Starting watering for schedule: {entry}")
-            capture_image(image_directory, f"before_watering_{entry['start_time']}")
+            # Skip if already watered at this scheduled time
+            if scheduled_time <= last_watered_datetime:
+                logging.debug(f"Skipping {start_time} (already watered at {last_watered}).")
+                continue
+
+        # If the schedule is due and has not run yet
+        if scheduled_time <= now:
+            logging.info(f"Starting watering for schedule at {start_time}.")
+            capture_image(image_directory, f"before_watering_{start_time}")
             pump.on()
-            time.sleep(entry["duration"])
+            time.sleep(duration)
             pump.off()
-            capture_image(image_directory, f"after_watering_{entry['start_time']}")
+            capture_image(image_directory, f"after_watering_{start_time}")
 
-            # Update state for this specific schedule
-            state["last_watered"][entry["start_time"]] = scheduled_datetime.strftime("%Y-%m-%d %H:%M:%S")
+            # Update the last watered time for this schedule
+            state.setdefault("last_watered", {})[start_time] = scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
             save_state(state)
-            logging.info(f"Watering completed for schedule: {entry}")
-            print(f"Watering completed for schedule: {entry}")
+            logging.info(f"Watering completed for schedule at {start_time}.")
 
 # Scheduler tasks
 def setup_schedule(config, state, image_directory):
