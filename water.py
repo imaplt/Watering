@@ -203,20 +203,35 @@ def main():
     now = datetime.now()
     schedule_data = config.get("watering_schedule", [])
 
-    # Get the last schedule up to the current time
+    # Get the last schedule up to the current time based on the interval
     latest_scheduled_time = None
     latest_entry = None
     for entry in schedule_data:
         start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
+        interval_days = entry.get("interval", 1)  # Default to every day
         scheduled_datetime = datetime.combine(now.date(), start_time)
 
+        # Check if the watering is valid based on the interval
+        last_watered_datetime = (
+            datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
+            if state.get("last_watered")
+            else None
+        )
+
+        if last_watered_datetime:
+            # Calculate the next valid watering day
+            next_valid_day = last_watered_datetime.date() + timedelta(days=interval_days)
+            if next_valid_day > now.date():
+                continue  # Skip if this schedule is not due yet
+
+        # Select the latest schedule up to the current time
         if scheduled_datetime <= now:
             if latest_scheduled_time is None or scheduled_datetime > latest_scheduled_time:
                 latest_scheduled_time = scheduled_datetime
                 latest_entry = entry
 
     # Check if the last scheduled time has been watered
-    if latest_scheduled_time:
+    if latest_scheduled_time and latest_entry:
         last_watered_datetime = (
             datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
             if state.get("last_watered")
@@ -236,8 +251,8 @@ def main():
             save_state(state)
             logging.info("Immediate watering completed.")
 
-    # Capture startup image and send email
-    capture_image(image_directory, "startup")
+    # Capture startup image and send email (optional)
+    startup_image = capture_image(image_directory, "startup")
     # Uncomment to enable email notification
     # if startup_image:
     #     send_email(
