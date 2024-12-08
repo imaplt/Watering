@@ -202,58 +202,40 @@ def main():
 
     initialize_pump(config["relay_pin"])
 
-    # Check if the last scheduled watering was missed
+    # Check if any watering schedule has been missed
     now = datetime.now()
     schedule_data = config.get("watering_schedule", [])
 
-    # Get the last schedule up to the current time based on the interval
-    latest_scheduled_time = None
-    latest_entry = None
     for entry in schedule_data:
-        start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
+        start_time = entry["start_time"]
+        duration = entry["duration"]
         interval_days = entry.get("interval", 1)  # Default to every day
-        scheduled_datetime = datetime.combine(now.date(), start_time)
+        scheduled_time = datetime.combine(now.date(), datetime.strptime(start_time, "%H:%M").time())
 
-        # Check if the watering is valid based on the interval
-        last_watered_datetime = (
-            datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
-            if state.get("last_watered")
-            else None
-        )
+        # Get the last watered time for this specific schedule
+        last_watered = state.get("last_watered", {}).get(start_time)
 
-        if last_watered_datetime:
-            # Calculate the next valid watering day
+        if last_watered:
+            last_watered_datetime = datetime.strptime(last_watered, "%Y-%m-%d %H:%M:%S")
+            # Calculate the next valid day based on interval
             next_valid_day = last_watered_datetime.date() + timedelta(days=interval_days)
             if next_valid_day > now.date():
-                continue  # Skip if this schedule is not due yet
+                continue  # Skip if not due yet
 
-        # Select the latest schedule up to the current time
-        if scheduled_datetime <= now:
-            if latest_scheduled_time is None or scheduled_datetime > latest_scheduled_time:
-                latest_scheduled_time = scheduled_datetime
-                latest_entry = entry
-
-    # Check if the last scheduled time has been watered
-    if latest_scheduled_time and latest_entry:
-        last_watered_datetime = (
-            datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
-            if state.get("last_watered")
-            else None
-        )
-
-        if last_watered_datetime is None or latest_scheduled_time > last_watered_datetime:
-            print("Missed watering detected or state file missing. Triggering immediate watering.")
-            logging.info("Missed watering detected or state file missing. Triggering immediate watering.")
-            capture_image(image_directory, "before_watering")
+        # If schedule is due or has never run
+        if not last_watered or scheduled_time > last_watered_datetime:
+            logging.info(f"Missed watering detected for schedule at {start_time}. Triggering immediate watering.")
+            capture_image(image_directory, f"before_watering_{start_time}")
             pump.on()
-            time.sleep(latest_entry["duration"])
+            time.sleep(duration)
             pump.off()
-            capture_image(image_directory, "after_watering")
+            capture_image(image_directory, f"after_watering_{start_time}")
 
-            # Update state with the latest watered time
-            state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
+            # Update the last watered time for this schedule
+            state.setdefault("last_watered", {})[start_time] = scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
             save_state(state)
-            logging.info("Immediate watering completed.")
+            logging.info(f"Immediate watering completed for schedule at {start_time}.")
+
 
     # Capture startup image and send email (optional)
     startup_image = capture_image(image_directory, "startup")
