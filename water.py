@@ -1,6 +1,5 @@
 import os
 import time
-from time import time
 import json
 import logging
 from datetime import datetime, timedelta
