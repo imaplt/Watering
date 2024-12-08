@@ -1,8 +1,9 @@
 import os
 import time
+from time import time
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from gpiozero import OutputDevice
 from smtplib import SMTP_SSL
 from email.message import EmailMessage
@@ -129,13 +130,28 @@ def water_plants(config, state, image_directory):
     if "last_watered" not in state:
         state["last_watered"] = None
 
-    # Get the latest watering schedule up to the current time
+    # Determine the next valid watering schedule based on the interval
     latest_scheduled_time = None
-    latest_entry = None  # Track the schedule entry corresponding to the latest time
+    latest_entry = None
     for entry in schedule_data:
         start_time = datetime.strptime(entry["start_time"], "%H:%M").time()
+        interval_days = entry.get("interval", 1)  # Default to every day
         scheduled_datetime = datetime.combine(now.date(), start_time)
 
+        # Adjust the scheduled time based on the interval
+        last_watered_datetime = (
+            datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
+            if state.get("last_watered")
+            else None
+        )
+
+        if last_watered_datetime:
+            # Calculate the next valid watering day
+            next_valid_day = last_watered_datetime.date() + timedelta(days=interval_days)
+            if next_valid_day > now.date():
+                continue  # Skip if this schedule is not due yet
+
+        # Select the latest schedule up to the current time
         if scheduled_datetime <= now:
             if latest_scheduled_time is None or scheduled_datetime > latest_scheduled_time:
                 latest_scheduled_time = scheduled_datetime
@@ -145,26 +161,19 @@ def water_plants(config, state, image_directory):
     if not latest_scheduled_time or not latest_entry:
         return
 
-    # Convert the last watered time from state for comparison
-    last_watered_datetime = (
-        datetime.strptime(state["last_watered"], "%Y-%m-%d %H:%M:%S")
-        if state["last_watered"]
-        else None
-    )
+    # Trigger watering if valid
+    logging.info(f"Starting watering for schedule: {latest_entry}")
+    capture_image(image_directory, "before_watering")
+    pump.on()
+    time.sleep(latest_entry["duration"])
+    pump.off()
+    capture_image(image_directory, "after_watering")
 
-    # Check if the latest scheduled time is after the last watered time
-    if last_watered_datetime is None or latest_scheduled_time > last_watered_datetime:
-        logging.info(f"Starting watering for schedule: {latest_entry}")
-        capture_image(image_directory, "before_watering")
-        pump.on()
-        time.sleep(latest_entry["duration"])
-        pump.off()
-        capture_image(image_directory, "after_watering")
+    # Update state with the latest watered time
+    state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
+    save_state(state)
+    logging.info(f"Watering completed for schedule: {latest_entry}")
 
-        # Update state with the latest watered time
-        state["last_watered"] = latest_scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
-        save_state(state)
-        logging.info(f"Watering completed for schedule: {latest_entry}")
 
 # Scheduler tasks
 def setup_schedule(config, state, image_directory):
