@@ -253,13 +253,13 @@ def main():
     # Capture startup image and send email (optional)
     startup_image = capture_image(image_directory, "startup")
     # Uncomment to enable email notification
-    # if startup_image:
-    #     send_email(
-    #         config,
-    #         [startup_image],
-    #         subject="Plant Watering System Started",
-    #         message="The plant watering system has started successfully."
-    #     )
+    if startup_image:
+        send_email(
+            config,
+            [startup_image],
+            subject="Plant Watering System Started",
+            message="The plant watering system has started successfully."
+        )
 
     # Set up the schedule
     setup_schedule(config, state, image_directory)
