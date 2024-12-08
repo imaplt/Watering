@@ -219,13 +219,20 @@ def main():
 
         if last_watered:
             last_watered_datetime = datetime.strptime(last_watered, "%Y-%m-%d %H:%M:%S")
+
             # Calculate the next valid day based on interval
             next_valid_day = last_watered_datetime.date() + timedelta(days=interval_days)
             if next_valid_day > now.date():
+                logging.debug(f"Skipping immediate check for {start_time} (next valid day: {next_valid_day}).")
                 continue  # Skip if not due yet
 
-        # If schedule is due or has never run
-        if not last_watered or scheduled_time > last_watered_datetime:
+            # Skip if already watered at this scheduled time
+            if scheduled_time <= last_watered_datetime:
+                logging.debug(f"Skipping immediate check for {start_time} (already watered at {last_watered}).")
+                continue
+
+        # If schedule is due and has not run yet
+        if scheduled_time <= now:
             logging.info(f"Missed watering detected for schedule at {start_time}. Triggering immediate watering.")
             capture_image(image_directory, f"before_watering_{start_time}")
             pump.on()
@@ -237,7 +244,6 @@ def main():
             state.setdefault("last_watered", {})[start_time] = scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
             save_state(state)
             logging.info(f"Immediate watering completed for schedule at {start_time}.")
-
 
     # Capture startup image and send email (optional)
     startup_image = capture_image(image_directory, "startup")
