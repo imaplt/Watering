@@ -6,12 +6,12 @@
      "daily_email_image_count": 6,
      "watering_schedule": [
         {
-            "start_time": "09:41",
+            "start_time": "09:50",
             "duration": 10,
             "interval": 1
         },
         {
-            "start_time": "09:45",
+            "start_time": "09:55",
             "duration": 10,
             "interval": 1
         },
