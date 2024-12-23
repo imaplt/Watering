@@ -101,6 +101,7 @@ def send_email(config, images, subject, message):
             logging.info(f"Email sent successfully: {subject}")
     except Exception as e:
         logging.error(f"Error sending email: {e}")
+        print("Error sending email...")
 
 # Capture periodic images
 def periodic_image_capture(config, image_directory):
@@ -132,6 +133,7 @@ def send_daily_email(config, image_directory):
             message="Here are the latest images from the plant watering system."
         )
         logging.info(f"Daily email sent with {len(images_to_send)} images.")
+        print("Daily email sent with {} images.".format(len(images_to_send)))
     except Exception as e:
         logging.error(f"Error sending daily email: {e}")
 
@@ -170,11 +172,12 @@ def water_plants(config, state, image_directory):
         # If the schedule is due and has not run yet
         if scheduled_time <= now:
             logging.info(f"Starting watering for schedule at {start_time}.")
-            capture_image(image_directory, f"before_watering_{start_time}")
+            print("Watering started for schedule at {}".format(start_time))
+            # capture_image(image_directory, f"before_watering_{start_time}")
             pump.on()
             time.sleep(duration)
             pump.off()
-            capture_image(image_directory, f"after_watering_{start_time}")
+            # capture_image(image_directory, f"after_watering_{start_time}")
 
             # Update the last watered time for this schedule
             state.setdefault("last_watered", {})[start_time] = scheduled_time.strftime("%Y-%m-%d %H:%M:%S")
@@ -268,12 +271,14 @@ def main():
     setup_schedule(config, state, image_directory)
 
     logging.info("System running. Press Ctrl+C to stop.")
+    print("System running. Press Ctrl+C to stop.")
     try:
         while True:
             schedule.run_pending()
             time.sleep(1)  # Prevent CPU overuse
     except KeyboardInterrupt:
         logging.info("Shutting down.")
+        print("Shutting down.")
         if pump:
             pump.off()
 
